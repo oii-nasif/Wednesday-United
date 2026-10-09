@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { User, Mail, Bell, Save, Camera, Trash2, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
-import { PreferredPosition } from '../types';
+import { PreferredPosition, isNasifUser } from '../types';
 
 const MAX_IMAGE_SIZE_BYTES = 500 * 1024; // 500 KB
 
@@ -23,6 +23,8 @@ export const Profile: React.FC = () => {
       </div>
     );
   }
+
+  const isAdmin = currentUser.role === 'admin' || isNasifUser(currentUser.email, currentUser.id);
 
   // Remove any legacy unsplash stock/dummy image
   const initialPhoto =
@@ -114,7 +116,7 @@ export const Profile: React.FC = () => {
           Player Profile & Preferences
         </h1>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-          Manage your squad registration, profile image, preferred pitch position, and notifications (FR-06).
+          Manage your squad registration, profile image, preferred pitch position, and notifications.
         </p>
       </div>
 
@@ -131,7 +133,9 @@ export const Profile: React.FC = () => {
           ) : (
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 text-white flex flex-col items-center justify-center shadow-md border-2 border-orange-500/40">
               <span className="font-extrabold text-2xl tracking-tight">{getInitials(displayName)}</span>
-              <span className="text-[10px] tracking-wider uppercase opacity-80 font-semibold mt-0.5">Player</span>
+              <span className="text-[10px] tracking-wider uppercase opacity-80 font-semibold mt-0.5">
+                {isAdmin ? 'Admin' : 'Player'}
+              </span>
             </div>
           )}
 
@@ -151,12 +155,12 @@ export const Profile: React.FC = () => {
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{displayName || currentUser.displayName}</h2>
             <span
               className={`inline-block text-xs font-bold px-2.5 py-0.5 rounded-full uppercase self-center sm:self-auto ${
-                currentUser.role === 'admin'
+                isAdmin
                   ? 'bg-blue-600 text-white'
                   : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
               }`}
             >
-              {currentUser.role}
+              {isAdmin ? 'ADMIN' : currentUser.role}
             </span>
           </div>
 
@@ -270,7 +274,7 @@ export const Profile: React.FC = () => {
 
         <div>
           <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
-            Preferred Position (BR-15)
+            Preferred Position
           </label>
           <p className="text-[11px] text-zinc-500 mb-2">
             Automatically attached to all your future match booking records.

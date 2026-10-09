@@ -29,7 +29,7 @@ import {
   getCutoffStatus,
   formatTimeUntil,
 } from '../utils/date';
-import { PreferredPosition, PaymentMethod, PaymentStatus } from '../types';
+import { PreferredPosition, PaymentMethod, PaymentStatus, isNasifUser } from '../types';
 import { resizeImage } from '../utils/image';
 
 export const MatchDetail: React.FC = () => {
@@ -119,7 +119,7 @@ export const MatchDetail: React.FC = () => {
     );
   }
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' || isNasifUser(currentUser?.email, currentUser?.id);
   const cutoff = getCutoffStatus(match.kickoffAt);
 
   // Attendee state for current user
@@ -154,7 +154,7 @@ export const MatchDetail: React.FC = () => {
     if (!file) return;
 
     if (photos.length >= 5) {
-      showToast('Maximum 5 photos. Delete one to add another. (FR-35)', 'error');
+      showToast('Maximum 5 photos. Delete one to add another.', 'error');
       return;
     }
 
@@ -227,7 +227,7 @@ export const MatchDetail: React.FC = () => {
             <button
               onClick={() => openActivityLogForMatch(match.id)}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center gap-1.5 transition"
-              title="View full audit trail for this match (FR-49)"
+              title="View full audit trail for this match"
             >
               <Activity className="w-3.5 h-3.5 text-blue-600" />
               <span>Match Audit Log</span>
@@ -344,7 +344,7 @@ export const MatchDetail: React.FC = () => {
                   Ready to play? Join Wednesday United
                 </h3>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                  Sign in with your Google account to confirm your spot in 1 click (FR-02, BR-02).
+                  Sign in with your Google account to confirm your spot in 1 click.
                 </p>
               </div>
               <button
@@ -412,7 +412,7 @@ export const MatchDetail: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         disabled
-                        title="Self-cancellation is locked within 24 hours of kickoff (BR-05)"
+                        title="Self-cancellation is locked within 24 hours of kickoff"
                         className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-400 text-xs font-bold cursor-not-allowed border border-zinc-300 dark:border-zinc-700 flex items-center gap-1.5"
                       >
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -423,7 +423,7 @@ export const MatchDetail: React.FC = () => {
                         <button
                           onClick={() => cancelBooking(match.id, userBooking.id, 'Admin override')}
                           className="px-3 py-2 rounded-xl bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 text-xs font-bold hover:bg-red-200 transition"
-                          title="Admin privilege: cancel anytime (BR-09)"
+                          title="Admin privilege: cancel anytime"
                         >
                           Admin Override Cancel
                         </button>
@@ -510,7 +510,7 @@ export const MatchDetail: React.FC = () => {
               {userPendingGuests.length > 0 && (
                 <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-800 dark:text-amber-300">
                   <span className="font-bold">Pending Guest Requests:</span>{' '}
-                  {userPendingGuests.map((g) => g.name).join(', ')} (Awaiting admin approval per BR-07).
+                  {userPendingGuests.map((g) => g.name).join(', ')} (Awaiting admin approval).
                 </div>
               )}
             </div>
@@ -634,7 +634,7 @@ export const MatchDetail: React.FC = () => {
                     )}
 
                     <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 text-xs text-blue-900 dark:text-blue-300">
-                      <span className="font-bold">24-Hour Dropout Rule (BR-05):</span> Self-cancellation closes
+                      <span className="font-bold">24-Hour Dropout Rule:</span> Self-cancellation closes
                       exactly 24 hours prior to kickoff. After the cutoff, your booking is locked to ensure turf costs
                       are covered.
                     </div>
@@ -654,7 +654,7 @@ export const MatchDetail: React.FC = () => {
                   Confirmed Attendance ({confirmedAttendees.length} Players)
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Open squad with no capacity limit (BR-01). Positions and self-reported payment statuses are shown.
+                  Open squad with no capacity limit. Positions and self-reported payment statuses are shown.
                 </p>
               </div>
 
@@ -741,7 +741,7 @@ export const MatchDetail: React.FC = () => {
                           <button
                             onClick={() => cancelBooking(match.id, att.id, 'Removed by admin (Override)')}
                             className="p-1 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
-                            title="Remove attendee from roster (FR-25, BR-09)"
+                            title="Remove attendee from roster"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -765,7 +765,7 @@ export const MatchDetail: React.FC = () => {
                   <span>Match Day Gallery ({photos.length}/5 Photos)</span>
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  High-res match photos and team snaps. Up to 5 photos per match (BR-20).
+                  High-res match photos and team snaps. Up to 5 photos per match.
                 </p>
               </div>
 
@@ -811,7 +811,7 @@ export const MatchDetail: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex-1">
                   <span className="font-bold text-zinc-700 dark:text-zinc-300 block mb-1">
-                    External Shared Album Link (FR-39)
+                    External Shared Album Link
                   </span>
                   {isEditingAlbum ? (
                     <div className="flex items-center gap-2">
@@ -901,7 +901,7 @@ export const MatchDetail: React.FC = () => {
                           <button
                             onClick={() => setCoverPhoto(match.id, p.thumbUrl)}
                             className="p-1.5 rounded-lg bg-black/70 text-white hover:bg-blue-500 transition"
-                            title="Set as match cover photo (FR-38, FR-40)"
+                            title="Set as match cover photo"
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
                           </button>
@@ -911,14 +911,14 @@ export const MatchDetail: React.FC = () => {
                               setTempCaption(p.caption);
                             }}
                             className="p-1.5 rounded-lg bg-black/70 text-white hover:bg-zinc-700 transition"
-                            title="Edit caption (FR-38)"
+                            title="Edit caption"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => deletePhoto(match.id, p.id)}
                             className="p-1.5 rounded-lg bg-black/70 text-red-400 hover:bg-red-700 hover:text-white transition"
-                            title="Delete photo (FR-38)"
+                            title="Delete photo"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1045,7 +1045,7 @@ export const MatchDetail: React.FC = () => {
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
                 Kickoff is in less than 24 hours ({Math.round(cutoff.hoursUntilKickoff)} hours remaining).
-                Under Rule <span className="font-bold">BR-05</span>, if you confirm this booking, you will{' '}
+                Under club rules, if you confirm this booking, you will{' '}
                 <span className="font-bold text-red-600 dark:text-red-400">NOT be able to cancel</span>.
               </p>
             </div>
@@ -1093,7 +1093,7 @@ export const MatchDetail: React.FC = () => {
             </div>
 
             <p className="text-xs text-zinc-500">
-              You can bring up to 5 guests per match. Guests are subject to admin approval (BR-07) and fee of ৳
+              You can bring up to 5 guests per match. Guests are subject to admin approval and fee of ৳
               {match.feePerPlayer} BDT.
             </p>
 
@@ -1201,7 +1201,7 @@ export const MatchDetail: React.FC = () => {
                 <>
                   <div>
                     <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">
-                      Payment Method * (BR-10)
+                      Payment Method *
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -1272,7 +1272,7 @@ export const MatchDetail: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-blue-600" />
-                <span>Admin Force-Add Attendee (BR-09)</span>
+                <span>Admin Force-Add Attendee</span>
               </h3>
               <button
                 onClick={() => setShowForceAddModal(false)}
@@ -1453,7 +1453,7 @@ export const MatchDetail: React.FC = () => {
                 Cancel Match Session?
               </h3>
               <p className="text-xs text-zinc-500 mt-1">
-                All confirmed players and guest hosts will receive an immediate cancellation email (FR-28).
+                All confirmed players and guest hosts will receive an immediate cancellation email.
               </p>
             </div>
 

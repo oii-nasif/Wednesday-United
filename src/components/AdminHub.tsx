@@ -61,7 +61,7 @@ export const AdminHub: React.FC = () => {
         <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-3" />
         <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Admin Access Restricted</h2>
         <p className="text-xs text-zinc-500 mt-2 mb-4">
-          The Admin Hub is reserved for Wednesday United club administrators (FR-45). Please sign in with an authorized administrator account.
+          The Admin Hub is reserved for Wednesday United club administrators. Please sign in with an authorized administrator account.
         </p>
         <button
           onClick={openSignInModal}
@@ -267,15 +267,15 @@ export const AdminHub: React.FC = () => {
       {/* --- SUBTAB: MATCHES --- */}
       {adminSubTab === 'matches' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Create Match Form (FR-22, FR-23) */}
+          {/* Create Match Form */}
           <div className="lg:col-span-1 p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
             <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               <PlusCircle className="w-5 h-5 text-blue-600" />
-              <span>Create New Match (FR-22)</span>
+              <span>Create New Match</span>
             </h2>
 
             <form onSubmit={handleCreateMatchSubmit} className="space-y-3.5">
-              {/* Turf dropdown with inline "Add new turf" (FR-23) */}
+              {/* Turf dropdown with inline "Add new turf" */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -293,7 +293,7 @@ export const AdminHub: React.FC = () => {
                 {showInlineNewTurf ? (
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-blue-500/40 space-y-2 mb-2 text-xs">
                     <span className="font-bold text-zinc-800 dark:text-zinc-200 block">
-                      Quick Save Turf (FR-23)
+                      Quick Save Turf
                     </span>
                     <input
                       type="text"
@@ -483,7 +483,7 @@ export const AdminHub: React.FC = () => {
                 Pending Guest Requests Queue ({allPendingGuests.length})
               </h2>
               <p className="text-xs text-zinc-500">
-                Guests do not appear on confirmed rosters until approved by an admin (Rule BR-07, FR-17).
+                Guests do not appear on confirmed rosters until approved by an admin.
               </p>
             </div>
           </div>
@@ -546,12 +546,12 @@ export const AdminHub: React.FC = () => {
         </div>
       )}
 
-      {/* --- SUBTAB: TURFS (FR-23, FR-24, BR-13, BR-14) --- */}
+      {/* --- SUBTAB: TURFS --- */}
       {adminSubTab === 'turfs' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Saved Turfs & Venues (BR-13)</h2>
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Saved Turfs & Venues</h2>
               <p className="text-xs text-zinc-500">
                 Create, edit and manage turf venues. Embedded Google Maps links are stored here.
               </p>
@@ -782,7 +782,7 @@ export const AdminHub: React.FC = () => {
                 </h2>
               </div>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Immutable records written by Cloud Functions. 12-month retention (FR-51, BR-21).
+                Immutable system audit records with 12-month retention.
               </p>
             </div>
 

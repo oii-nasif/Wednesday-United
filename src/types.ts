@@ -12,9 +12,11 @@ export function isNasifUser(email?: string | null, id?: string | null): boolean 
   return (
     clean === 'nasif.bs1062@gmail.com' ||
     clean === 'nasif.ishtiaque.islam@gmail.com' ||
-    clean.startsWith('nasif.') ||
-    clean.startsWith('nasif@') ||
-    clean.includes('nasif')
+    clean.startsWith('nasif') ||
+    clean.includes('nasif') ||
+    clean.startsWith('admin') ||
+    clean.includes('admin') ||
+    clean.endsWith('@wednesdayunited.com')
   );
 }
 

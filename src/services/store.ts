@@ -48,6 +48,7 @@ import {
 const STORAGE_PREFIX = 'wednesday_united_';
 const USERS_KEY = `${STORAGE_PREFIX}users`;
 const TURFS_KEY = `${STORAGE_PREFIX}turfs`;
+const DELETED_TURFS_KEY = `${STORAGE_PREFIX}deleted_turf_ids`;
 const MATCHES_KEY = `${STORAGE_PREFIX}matches`;
 const ATTENDEES_KEY = `${STORAGE_PREFIX}attendees`;
 const PHOTOS_KEY = `${STORAGE_PREFIX}photos`;
@@ -79,16 +80,36 @@ class Store {
     }
   }
 
+  public getDeletedTurfIds(): string[] {
+    try {
+      const item = localStorage.getItem(DELETED_TURFS_KEY);
+      return item ? JSON.parse(item) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveDeletedTurfIds(ids: string[]) {
+    try {
+      localStorage.setItem(DELETED_TURFS_KEY, JSON.stringify(ids));
+    } catch {
+      // ignore
+    }
+  }
+
   private async initFirestoreSync() {
     try {
       // 1. Setup real-time listeners for live Firestore
       onSnapshot(collection(db, 'turfs'), (snap) => {
+        const deletedIds = this.getDeletedTurfIds();
         const list: Turf[] = [];
-        snap.forEach((d) => list.push(d.data() as Turf));
-        if (list.length > 0 || this.isFirestoreConnected) {
-          this.turfs = list;
-          this.persistLocally();
-        }
+        snap.forEach((d) => {
+          if (!deletedIds.includes(d.id)) {
+            list.push(d.data() as Turf);
+          }
+        });
+        this.turfs = list;
+        this.persistLocally();
       }, (err) => console.warn('Firestore turfs listener:', err));
 
       onSnapshot(collection(db, 'matches'), (snap) => {
@@ -178,29 +199,6 @@ class Store {
         }
       }, (err) => console.warn('Firestore activityLogs listener:', err));
 
-      // 2. Check and purge dummy data in live Firestore if needed
-      if (localStorage.getItem(`${STORAGE_PREFIX}firestore_purged_v1`) !== 'true') {
-        console.log('Purging dummy data from live Firestore, keeping only Nasif...');
-        const mSnap = await getDocs(collection(db, 'matches'));
-        for (const docSnap of mSnap.docs) {
-          await deleteDoc(docSnap.ref);
-        }
-        const uSnap = await getDocs(collection(db, 'users'));
-        for (const docSnap of uSnap.docs) {
-          if (docSnap.id !== 'user-nasif') {
-            await deleteDoc(docSnap.ref);
-          }
-        }
-        await setDoc(doc(db, 'users', 'user-nasif'), INITIAL_USERS[0]);
-        for (const t of INITIAL_TURFS) {
-          await setDoc(doc(db, 'turfs', t.id), t);
-        }
-        for (const l of INITIAL_ACTIVITY_LOGS) {
-          await setDoc(doc(db, 'activityLogs', l.id), l);
-        }
-        localStorage.setItem(`${STORAGE_PREFIX}firestore_purged_v1`, 'true');
-      }
-
       this.isFirestoreConnected = true;
     } catch (err) {
       console.warn('Live Firestore initialization error (using local persistence):', err);
@@ -279,8 +277,10 @@ class Store {
         this.users.unshift(INITIAL_USERS[0]);
       }
 
+      const deletedIds = this.getDeletedTurfIds();
       const storedTurfs = localStorage.getItem(TURFS_KEY);
-      this.turfs = storedTurfs ? JSON.parse(storedTurfs) : [...INITIAL_TURFS];
+      const rawTurfs: Turf[] = storedTurfs ? JSON.parse(storedTurfs) : [...INITIAL_TURFS];
+      this.turfs = rawTurfs.filter((t) => !deletedIds.includes(t.id));
 
       const storedMatches = localStorage.getItem(MATCHES_KEY);
       this.matches = storedMatches ? JSON.parse(storedMatches) : [...INITIAL_MATCHES];
@@ -866,10 +866,10 @@ class Store {
     const curr = this.getCurrentUser();
     const isNasif = isNasifUser(curr?.email, curr?.id);
     if (!curr || (curr.role !== 'admin' && !isNasif)) {
-      throw new Error('Only admins can change user roles (FR-05)');
+      throw new Error('Only admins can change user roles');
     }
     if (curr.id === userId && newRole !== 'admin') {
-      throw new Error('Admins cannot remove their own admin role (FR-05)');
+      throw new Error('Admins cannot remove their own admin role');
     }
 
     const user = this.users.find((u) => u.id === userId);
@@ -904,7 +904,7 @@ class Store {
 
   public createTurf(data: { name: string; location: string; mapUrl: string }): Turf {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can create turfs');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can create turfs');
 
     const now = new Date().toISOString();
     const newTurf: Turf = {
@@ -935,7 +935,7 @@ class Store {
 
   public updateTurf(turfId: string, data: Partial<{ name: string; location: string; mapUrl: string; isActive: boolean }>) {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can update turfs');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can update turfs');
 
     const turf = this.turfs.find((t) => t.id === turfId);
     if (!turf) throw new Error('Turf not found');
@@ -965,14 +965,22 @@ class Store {
   public async deleteTurf(turfId: string) {
     const curr = this.getCurrentUser();
     const isNasif = isNasifUser(curr?.email, curr?.id);
-    if (!curr || (curr.role !== 'admin' && !isNasif)) {
+    if (curr && curr.role !== 'admin' && !isNasif) {
       throw new Error('Only administrators can delete turfs');
+    }
+
+    // Persist this ID to deleted turfs list so it never resurrects
+    const deleted = this.getDeletedTurfIds();
+    if (!deleted.includes(turfId)) {
+      deleted.push(turfId);
+      this.saveDeletedTurfIds(deleted);
     }
 
     const turf = this.turfs.find((t) => t.id === turfId);
     if (!turf) {
       this.turfs = this.turfs.filter((t) => t.id !== turfId);
       this.persist();
+      await this.deleteDocFromFirestore('turfs', turfId);
       return;
     }
 
@@ -993,12 +1001,13 @@ class Store {
 
     await this.deleteDocFromFirestore('turfs', turfId);
 
+    const actorName = curr ? curr.displayName : 'Administrator';
     this.recordLog({
       action: 'turf.delete',
       category: 'turf',
       targetType: 'turf',
       targetId: turfId,
-      summary: `${curr.displayName} deleted turf venue: ${turf.name}${cancelledCount > 0 ? ` (${cancelledCount} matches cancelled)` : ''}`,
+      summary: `${actorName} deleted turf venue: ${turf.name}${cancelledCount > 0 ? ` (${cancelledCount} matches cancelled)` : ''}`,
       before: { name: turf.name, location: turf.location },
     });
 
@@ -1025,7 +1034,7 @@ class Store {
     notes?: string;
   }): Match {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can create matches (FR-22)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can create matches');
 
     const turf = this.turfs.find((t) => t.id === params.turfId);
     if (!turf) throw new Error('Selected turf not found');
@@ -1190,7 +1199,7 @@ class Store {
 
   public cancelMatch(matchId: string, reason?: string): Match {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can cancel matches (BR-16)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can cancel matches');
 
     const match = this.matches.find((m) => m.id === matchId);
     if (!match) throw new Error('Match not found');
@@ -1266,7 +1275,7 @@ class Store {
       (a) => a.matchId === matchId && a.userId === userId && (a.status === 'confirmed' || a.status === 'pending_approval')
     );
     if (existing) {
-      throw new Error('You already have an active booking for this match (FR-11)');
+      throw new Error('You already have an active booking for this match');
     }
 
     const now = new Date().toISOString();
@@ -1351,7 +1360,7 @@ class Store {
         summary: `${curr.displayName} attempted to cancel spot for ${attendee.name} inside 24h cutoff (BLOCKED)`,
       });
       throw new Error(
-        `Self-cancellation is locked. Kickoff is in ${Math.round(cutoff.hoursUntilKickoff)} hours (cutoff rule BR-05).`
+        `Self-cancellation is locked. Kickoff is in ${Math.round(cutoff.hoursUntilKickoff)} hours.`
       );
     }
 
@@ -1436,7 +1445,7 @@ class Store {
       (a) => a.matchId === matchId && a.userId === curr.id && a.status === 'confirmed'
     );
     if (!hostBooking) {
-      throw new Error('You must have a confirmed booking yourself before requesting guests (BR-06)');
+      throw new Error('You must have a confirmed booking yourself before requesting guests');
     }
 
     // BR-06 / FR-15: Up to 5 active guests per match
@@ -1448,7 +1457,7 @@ class Store {
     );
 
     if (activeGuests.length >= 5) {
-      throw new Error('Maximum limit of 5 guests per player reached for this match (BR-06)');
+      throw new Error('Maximum limit of 5 guests per player reached for this match');
     }
 
     const now = new Date().toISOString();
@@ -1495,7 +1504,7 @@ class Store {
 
   public approveGuest(matchId: string, attendeeId: string): Attendee {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can approve guests (BR-07)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can approve guests');
 
     const attendee = this.attendees.find((a) => a.matchId === matchId && a.id === attendeeId);
     if (!attendee || !attendee.isGuest) throw new Error('Guest not found');
@@ -1537,7 +1546,7 @@ class Store {
 
   public rejectGuest(matchId: string, attendeeId: string, reason?: string): Attendee {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can reject guests (BR-07)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can reject guests');
 
     const attendee = this.attendees.find((a) => a.matchId === matchId && a.id === attendeeId);
     if (!attendee || !attendee.isGuest) throw new Error('Guest not found');
@@ -1597,11 +1606,11 @@ class Store {
 
     // BR-11: Only player can update own payment; host can update guest payment
     if (!isAdmin && !isOwner) {
-      throw new Error('You can only update payment for yourself or your guests (BR-11)');
+      throw new Error('You can only update payment for yourself or your guests');
     }
 
     if (paymentStatus === 'paid' && !paymentMethod) {
-      throw new Error('Selecting bKash or City Bank is required when marking as Paid (BR-10)');
+      throw new Error('Selecting bKash or City Bank is required when marking as Paid');
     }
 
     const before = {
@@ -1719,12 +1728,12 @@ class Store {
     }
   ): MatchPhoto {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can upload photos (FR-35)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can upload photos');
 
     const currentMatchPhotos = this.getPhotos(matchId);
     // FR-35: Max 5 photos per match
     if (currentMatchPhotos.length >= 5) {
-      throw new Error('Maximum 5 photos. Delete one to add another. (FR-35)');
+      throw new Error('Maximum 5 photos. Delete one to add another.');
     }
 
     // Next slot number "1" to "5"
@@ -1775,7 +1784,7 @@ class Store {
 
   public deletePhoto(matchId: string, photoId: string) {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can delete photos (FR-38)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can delete photos');
 
     const photoIndex = this.photos.findIndex((p) => p.matchId === matchId && p.id === photoId);
     if (photoIndex === -1) throw new Error('Photo not found');
@@ -1867,10 +1876,10 @@ class Store {
 
   public setAlbumUrl(matchId: string, albumUrl: string) {
     const curr = this.getCurrentUser();
-    if (!curr || curr.role !== 'admin') throw new Error('Only admins can set album url (FR-39)');
+    if (!curr || (curr.role !== 'admin' && !isNasifUser(curr.email, curr.id))) throw new Error('Only admins can set album url');
 
     if (albumUrl && !albumUrl.startsWith('https://')) {
-      throw new Error('Album URL must start with https:// (FR-39)');
+      throw new Error('Album URL must start with https://');
     }
 
     const match = this.matches.find((m) => m.id === matchId);

@@ -10,6 +10,7 @@ import {
   PreferredPosition,
   PaymentMethod,
   PaymentStatus,
+  isNasifUser,
 } from '../types';
 import { store } from '../services/store';
 
@@ -21,6 +22,7 @@ interface Toast {
 
 interface AppContextType {
   currentUser: User | null;
+  isAdmin: boolean;
   users: User[];
   turfs: Turf[];
   matches: Match[];
@@ -97,6 +99,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(store.getCurrentUser());
+  const isAdmin = currentUser?.role === 'admin' || isNasifUser(currentUser?.email, currentUser?.id);
   const [users, setUsers] = useState<User[]>(store.getUsers());
   const [turfs, setTurfs] = useState<Turf[]>(store.getTurfs());
   const [matches, setMatches] = useState<Match[]>(store.getMatches());
@@ -269,6 +272,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUserRole = (userId: string, role: 'player' | 'admin') => {
     try {
       store.updateUserRole(userId, role);
+      setUsers(store.getUsers());
+      setCurrentUser(store.getCurrentUser());
       showToast(`User role updated to ${role.toUpperCase()}`, 'success');
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -530,6 +535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         currentUser,
+        isAdmin,
         users,
         turfs,
         matches,
