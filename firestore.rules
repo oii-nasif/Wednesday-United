@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // turfs: Anyone can read, app operations can create, update, delete
+    match /turfs/{turfId} {
+      allow read, write: if true;
+    }
+
+    // matches: Anyone can read, app operations can write
+    match /matches/{matchId} {
+      allow read, write: if true;
+
+      // attendees subcollection
+      match /attendees/{attendeeId} {
+        allow read, write: if true;
+      }
+
+      // photos subcollection
+      match /photos/{photoId} {
+        allow read, write: if true;
+      }
+    }
+
+    // users: Anyone can read, users can update profile / roles
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // activityLogs: Append-only audit logs
+    match /activityLogs/{logId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+  }
+}

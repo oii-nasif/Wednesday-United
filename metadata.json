@@ -1,0 +1,8 @@
+{
+  "name": "Wednesday United - Football Turf Booking",
+  "description": "Football turf booking, match attendance, roster management, and activity log system for Wednesday United Football Club.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

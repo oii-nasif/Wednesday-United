@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "Turf": {
+      "collection": "turfs",
+      "fields": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "mapUrl": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "Match": {
+      "collection": "matches",
+      "fields": {
+        "turfId": { "type": "string" },
+        "turfName": { "type": "string" },
+        "turfLocation": { "type": "string" },
+        "mapUrl": { "type": "string" },
+        "matchDate": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "kickoffAt": { "type": "string" },
+        "endAt": { "type": "string" },
+        "feePerPlayer": { "type": "number" },
+        "status": { "type": "string" },
+        "confirmedCount": { "type": "number" },
+        "notes": { "type": "string" },
+        "photoCount": { "type": "number" },
+        "coverPhotoUrl": { "type": "string" },
+        "albumUrl": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "Attendee": {
+      "collection": "matches/{matchId}/attendees",
+      "fields": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "isGuest": { "type": "boolean" },
+        "hostUserId": { "type": "string" },
+        "guestAddedByName": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "paymentRef": { "type": "string" },
+        "preferredPosition": { "type": "string" },
+        "addedByAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "User": {
+      "collection": "users",
+      "fields": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "preferredPosition": { "type": "string" },
+        "role": { "type": "string" },
+        "emailNotifications": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Photo": {
+      "collection": "matches/{matchId}/photos",
+      "fields": {
+        "imageUrl": { "type": "string" },
+        "thumbUrl": { "type": "string" },
+        "storagePath": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "caption": { "type": "string" },
+        "order": { "type": "number" },
+        "addedBy": { "type": "string" },
+        "addedAt": { "type": "string" }
+      }
+    },
+    "ActivityLog": {
+      "collection": "activityLogs",
+      "fields": {
+        "timestamp": { "type": "string" },
+        "actorUid": { "type": "string" },
+        "actorName": { "type": "string" },
+        "actorEmail": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "action": { "type": "string" },
+        "category": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "summary": { "type": "string" },
+        "before": { "type": "object" },
+        "after": { "type": "object" },
+        "expireAt": { "type": "string" }
+      }
+    }
+  }
+}
